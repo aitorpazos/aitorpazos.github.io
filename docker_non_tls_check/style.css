@@ -1,0 +1,34 @@
+h1, h2, h3, h4, h5, h6 {
+    color: whitesmoke;
+}
+
+body {
+    color: #a3a3a3;
+}
+
+img {
+    background-color: whitesmoke;
+}
+
+iframe {
+    background-color: whitesmoke;
+    width: 100%;
+    height: 6em;
+}
+
+.ok {
+    background-color: #1e8226;
+}
+
+.ko {
+    background-color: #822224;
+}
+
+#actions_log {
+    position: fixed;
+    top: 0;
+    width: 100%;
+}
+
+
+
