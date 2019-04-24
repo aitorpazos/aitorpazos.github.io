@@ -12,8 +12,9 @@
 <body>
 <h1>Running docker daemon without TLS</h1>
 
+
 <p>
-    This is a small page that tries to bring awareness of the risks that allowing Docker daemon to listen on localhost without TLS enabled. i.e.: using flags like "-H localhost:2375" or ticking the box in the Docker settings.
+    This is a small page that tries to bring awareness of the risks that allowing Docker daemon to listen on localhost without TLS enabled. i.e.: using flags like "-H localhost:2375" or ticking the box in the Docker settings. This page is deployed on <a href="http://docker-check.aitorpazos.es">http://docker-check.aitorpazos.es</a> to be able to reach the Docker daemon without using TLS. Otherwise, the mixed content policies in your browser will block reaching HTTP sites from a HTTPS page.</p>
 </p>
 <img src="images/docker_for_windows_settings.png" width="500em"/>
 
