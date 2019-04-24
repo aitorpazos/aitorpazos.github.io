@@ -18,16 +18,21 @@
 <img src="images/docker_for_windows_settings.png" width="500em"/>
 
 <p>
+    You can check the code at <a href="https://github.com/aitorpazos/aitorpazos.github.io" target="_blank">https://github.com/aitorpazos/aitorpazos.github.io</a>
+</p>
+<p>
     The docker daemon is exposed using the loopback interface (i.e.: tcp://localhost:2375), which limits greatly the harm that can be done using it. However, this setting leaves the docker daemon more easily addressable by potential bad actors.
 </p>
 <img src="images/dockerd_and_webpage.png" width="500em"/>
 
 <p>
-    Your browser's same-origin policy mechanisms (<a href="https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy" target="_blank">https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy</a>) is the only barrier that prevents an evil site to run any command on your machine, which is not a situation you want to be in.
+    Your browser's same-origin policy mechanisms (<a href="https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy" target="_blank">https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy</a>) is the only barrier that prevents an evil site to run any command on your machine, which is not a situation you want to be in.<br />
 
-    These are examples of read-only operations that same-origin protections prevents (this is shown as green).
+    These are examples of read-only operations that same-origin protections prevents (this is shown as green).<br />
 
-    For example, in the containers section, in my very restricted tests I've already noticed that, the KDE's Falkon browser is failing to enforce that policy as it should, allowing a site to run containers.
+    For example, in the containers section, in my very restricted tests I've already noticed that, the KDE's Falkon browser is failing to enforce that policy as it should, allowing a site to run containers.<br />
+
+    An additional protection is that the attacker must use HTTP sites as browsers will refuse to load mixed content (perform HTTP requests from HTTPS sites).<br />
 
     On the left a well-behaved browser, on the right, a misbehaving one:
 </p>
